@@ -7,6 +7,7 @@ import requests
 from lxml.html import fromstring
 from lxml import html
 import json
+import lxml
 
 def send_telegram_message(message: str,
                           chat_id: str = TG_CHAT_ID,
