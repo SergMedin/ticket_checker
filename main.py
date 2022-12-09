@@ -33,11 +33,13 @@ while True:
         print_log_message('Засыпаем на 1 секунду')
         sleep(1)
         continue
-     
+    
+    no_tickets = True
     print_log_message('Данные с сайта получены. Проверяем есть ли билеты...')
     for match in data['matches']:
         if match['match_status'] != 'Currently unavailable':
             print_log_message('Уведомляем, что есть билеты')
+            no_tickets = False
             
             message = 'Похоже, есть билеты, как минимум на этот матч:\n'
             for key in match:
@@ -48,14 +50,15 @@ while True:
             
             # засыпаем надолго
             print_log_message('Засыпаем на {} секунд'.format(DELAY_SEC*10))
-            sleep(DELAY_SEC*10)
+            sleep(DELAY_SEC*20)
             break
-    print_log_message('Билетов нет')
-    
-    if counter == 0 or counter > COUNTER_LIMIT:
-        if TG_NOTIFICATIONS:
-            send_telegram_message('Билетов нет. Но я жив, здоров :)')
-        counter = 0
+            
+    if no_tickets:
+        if counter == 0 or counter > COUNTER_LIMIT:
+            print_log_message('Билетов нет')
+            if TG_NOTIFICATIONS:
+                send_telegram_message('Билетов нет. Но я жив, здоров :)')
+            counter = 0
 
-    print_log_message('Засыпаем на {} секунд'.format(DELAY_SEC))
-    sleep(DELAY_SEC)
+        print_log_message('Засыпаем на {} секунд'.format(DELAY_SEC))
+        sleep(DELAY_SEC)
