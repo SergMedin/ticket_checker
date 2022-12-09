@@ -49,7 +49,7 @@ while True:
                 send_telegram_message(message)
             
             # засыпаем надолго
-            print_log_message('Засыпаем на {} секунд'.format(DELAY_SEC*10))
+            print_log_message('Засыпаем на {} секунд'.format(DELAY_SEC*20))
             sleep(DELAY_SEC*20)
             break
             
