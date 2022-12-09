@@ -40,6 +40,7 @@ while True:
         if match['match_status'] != 'Currently unavailable':
             print_log_message('Уведомляем, что есть билеты')
             no_tickets = False
+            counter = -1 # чтобы сразу как пропадут билеты получить уведомление о том, что их нет
             
             message = 'Похоже, есть билеты, как минимум на этот матч:\n'
             for key in match:
