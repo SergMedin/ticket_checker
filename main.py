@@ -23,6 +23,9 @@ while True:
         except requests.exceptions.ProxyError:
             print_log_message('requests.exceptions.ProxyError')
             proxy = choose_new_proxy(proxies)
+        except requests.exceptions.ConnectTimeout:
+            print_log_message('requests.exceptions.ConnectTimeout')
+            proxy = choose_new_proxy(proxies)
         except lxml.etree.ParserError:
             print_log_message('lxml.etree.ParserError')
             proxy = choose_new_proxy(proxies)
@@ -55,8 +58,8 @@ while True:
             break
             
     if no_tickets:
+        print_log_message('Билетов нет')
         if counter == 0 or counter > COUNTER_LIMIT:
-            print_log_message('Билетов нет')
             if TG_NOTIFICATIONS:
                 send_telegram_message('Билетов нет. Но я жив, здоров :)')
             counter = 0

@@ -74,7 +74,8 @@ def get_data(proxy = ''):
     response = requests.get(
         PAGE_URL,
         headers=headers,
-        proxies={"http": proxy, "https": proxy}
+        proxies={"http": proxy, "https": proxy},
+        timeout=30
     )
     
     print_log_message('Статус ответа: {}'.format(response.status_code))
