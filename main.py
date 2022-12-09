@@ -27,7 +27,7 @@ while True:
     if data['status_code'] != 200:
         print_log_message('Данные сайта не получены. Попробуем поменять прокси. Статус: {}'.format(data['status_code']))
         proxy = choose_new_proxy(proxies)
-        print_log_message('Засыпаем на {} секунд'.format(DELAY_SEC))
+        print_log_message('Засыпаем на 1 секунду')
         sleep(1)
         continue
      
