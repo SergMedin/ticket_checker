@@ -50,8 +50,8 @@ while True:
                 send_telegram_message(message)
             
             # засыпаем надолго
-            print_log_message('Засыпаем на {} секунд'.format(DELAY_SEC*20))
-            sleep(DELAY_SEC*20)
+            print_log_message('Засыпаем на {} секунд'.format(DELAY_SEC*10))
+            sleep(DELAY_SEC*10)
             break
             
     if no_tickets:
