@@ -76,6 +76,7 @@ def get_data(proxy = ''):
         proxies={"http": proxy, "https": proxy}
     )
     
+    print_log_message('Статус ответа: {}'.format(response.status_code))
     if response.status_code != 200:
         return {
             'matches': [],
@@ -83,11 +84,17 @@ def get_data(proxy = ''):
         }
     
     tree = fromstring(response.content) 
-    phases = (
+    phases = list(
         tree
         .xpath('//*[@class="performances_sub_container performances_monthly_grouped performances_monthly_sold_out performances_grouped_by_phase"]')
+        #.xpath('//*[contains(@class, "performances_sub_container performances_monthly_grouped")]')
+    ) + list(
+        tree
+        .xpath('//*[@class="performances_sub_container performances_monthly_grouped performances_grouped_by_phase"]')
     )
+    print(phases)
     
+    print_log_message('Вижу {} фаз. Пробую извлечь данные о матчах...'.format(len(phases)))
     matches_data = []
     for phase in phases:
         matches = phase.find_class('perf_details')
@@ -128,7 +135,7 @@ def get_data(proxy = ''):
                 .text
             )
 
-            if match.find_class('buttons_availability resale perf_info_list_element last_element align_right')[0] is not None:
+            if len(match.find_class('buttons_availability resale perf_info_list_element last_element align_right')[0].find_class('from sold_out_text')) != 0:
                 match_data['match_status'] = (
                     match
                     .find_class('buttons_availability resale perf_info_list_element last_element align_right')[0]
@@ -140,6 +147,11 @@ def get_data(proxy = ''):
 
             matches_data.append(match_data)
     
+    print_log_message('Собрали информацию о {} матчах.'.format(len(matches_data)))
+    for element in matches_data:
+        for key in element:
+            print(key, ':', element[key])
+        print()
     return {
             'matches': matches_data,
             'status_code': response.status_code

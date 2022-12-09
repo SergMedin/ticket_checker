@@ -23,6 +23,9 @@ while True:
         except requests.exceptions.ProxyError:
             print_log_message('requests.exceptions.ProxyError')
             proxy = choose_new_proxy(proxies)
+        except lxml.etree.ParserError:
+            print_log_message('lxml.etree.ParserError')
+            proxy = choose_new_proxy(proxies)
         
     if data['status_code'] != 200:
         print_log_message('Данные сайта не получены. Попробуем поменять прокси. Статус: {}'.format(data['status_code']))
@@ -37,7 +40,6 @@ while True:
             print_log_message('Уведомляем, что есть билеты')
             
             message = 'Похоже, есть билеты, как минимум на этот матч:\n'
-            match = tmp['matches'][0]
             for key in match:
                 message += key + ': ' + match[key] + '\n'
                 
@@ -45,6 +47,7 @@ while True:
                 send_telegram_message(message)
             
             # засыпаем надолго
+            print_log_message('Засыпаем на {} секунд'.format(DELAY_SEC*10))
             sleep(DELAY_SEC*10)
             break
     print_log_message('Билетов нет')
