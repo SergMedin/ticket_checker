@@ -61,17 +61,19 @@ def choose_new_proxy(proxies):
     PROXY = proxies.pop(0)
     print_log_message('Новый адрес прокси:\t{}. Осталось:\t{} адресов (при обнулении, автоматически загрузятся новые)'.format(PROXY, len(proxies)))
 
-    return None
+    return PROXY
 
-def get_data():
+def get_data(proxy = ''):
     headers = {
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36',
     }
 
+    print_log_message('Словарь параметров прокси:')
+    print_log_message({"http": proxy, "https": proxy})
     response = requests.get(
         PAGE_URL,
         headers=headers,
-        proxies={"http": PROXY, "https": PROXY}
+        proxies={"http": proxy, "https": proxy}
     )
     
     if response.status_code != 200:

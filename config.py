@@ -3,3 +3,5 @@ PAGE_URL = 'https://resale-intl.fwc22.tickets.fifa.com/secure/selection/event/da
 DELAY_SEC = 30
 # Как часто сообщать, что бот работает (в циклах проверки)
 COUNTER_LIMIT = 100
+
+TG_NOTIFICATIONS = True

@@ -6,17 +6,29 @@ from functions import *
 
 print_log_message('Пробуем получить список прокси...')
 proxies = []
-choose_new_proxy(proxies)
+proxy = choose_new_proxy(proxies)
 
 counter = -1
 while True:
     counter += 1
     print_log_message('')
-    print_log_message('Пробуем получить данные с сайта...')
-    data = get_data()
+    while True:
+        try:
+            print_log_message('Пробуем получить данные с сайта...')
+            data = get_data(proxy)
+            break
+        except requests.exceptions.SSLError:
+            print_log_message('requests.exceptions.SSLError')
+            proxy = choose_new_proxy(proxies)
+        except requests.exceptions.ProxyError:
+            print_log_message('requests.exceptions.ProxyError')
+            proxy = choose_new_proxy(proxies)
+        
     if data['status_code'] != 200:
         print_log_message('Данные сайта не получены. Попробуем поменять прокси. Статус: {}'.format(data['status_code']))
-        choose_new_proxy(proxies)
+        proxy = choose_new_proxy(proxies)
+        print_log_message('Засыпаем на {} секунд'.format(DELAY_SEC))
+        sleep(1)
         continue
      
     print_log_message('Данные с сайта получены. Проверяем есть ли билеты...')
@@ -28,7 +40,9 @@ while True:
             match = tmp['matches'][0]
             for key in match:
                 message += key + ': ' + match[key] + '\n'
-            send_telegram_message(message)
+                
+            if TG_NOTIFICATIONS:
+                send_telegram_message(message)
             
             # засыпаем надолго
             sleep(DELAY_SEC*10)
@@ -36,7 +50,9 @@ while True:
     print_log_message('Билетов нет')
     
     if counter == 0 or counter > COUNTER_LIMIT:
-        send_telegram_message('Билетов нет. Но я жив, здоров :)')
+        if TG_NOTIFICATIONS:
+            send_telegram_message('Билетов нет. Но я жив, здоров :)')
         counter = 0
-    
+
+    print_log_message('Засыпаем на {} секунд'.format(DELAY_SEC))
     sleep(DELAY_SEC)
