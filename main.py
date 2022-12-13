@@ -1,7 +1,7 @@
 import logging
 
-from config import TG_NOTIFICATIONS, DELAY_SEC, COUNTER_LIMIT, proxies
-from functions import send_telegram_message, choose_new_proxy, get_data
+from config import TG_NOTIFICATIONS, DELAY_SEC, COUNTER_LIMIT
+from functions import Proxies, send_telegram_message, get_data
 
 from time import sleep
 from requests.exceptions import HTTPError, SSLError, ProxyError, ConnectTimeout, ConnectionError
@@ -10,10 +10,12 @@ from lxml.etree import ParserError
 # try level=logging.DEBUG if you need more information
 logging.basicConfig(level=logging.INFO, format='%(asctime)s: %(message)s')
 
+proxies = Proxies()
 
-def main(proxies: list):
+
+def main():
     logging.info('We are trying to get a list of proxies...')
-    proxy, proxies = choose_new_proxy(proxies)
+    proxy = proxies.get_new_proxy()
 
     counter = -1
     while True:
@@ -26,7 +28,7 @@ def main(proxies: list):
                 break
             except (HTTPError, SSLError, ProxyError, ConnectTimeout, ConnectionError, ParserError) as error:
                 logging.error(error)
-                proxy, proxies = choose_new_proxy(proxies)
+                proxy = proxies.get_new_proxy()
                 logging.info('Fall asleep for 1 second')
                 sleep(1)
 
@@ -64,4 +66,4 @@ def main(proxies: list):
 
 
 if __name__ == '__main__':
-    main(proxies)
+    main()

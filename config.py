@@ -11,8 +11,3 @@ COUNTER_LIMIT = 100
 
 # Send notifications in telegram? It is convenient to disable for debugging
 TG_NOTIFICATIONS = False
-# DEBUG_MODE - more technical information will be output to the console. Convenient for debugging.
-DEBUG_MODE = True
-
-# initial proxies list
-proxies = []

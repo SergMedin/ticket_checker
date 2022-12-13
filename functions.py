@@ -8,6 +8,40 @@ from lxml.html import fromstring
 import json
 
 
+class Proxies:
+    def __init__(self):
+        self._get_proxies()
+
+    def _get_proxies(self):
+        """
+        The function gets a list of free proxies from the site free-proxy-list.net
+        """
+        url = 'https://free-proxy-list.net/'
+        response = requests.get(url)
+        parser = fromstring(response.text)
+        proxies = set()
+        for i in parser.xpath('//tbody/tr'):
+            if i.xpath('.//td[7][contains(text(),"yes")]'):
+                # Grabbing IP and corresponding PORT
+                proxy = ":".join([i.xpath('.//td[1]/text()')[0], i.xpath('.//td[2]/text()')[0]])
+                proxies.add(proxy)
+        self.proxies = list(proxies)
+
+    def get_new_proxy(self):
+        """
+        The function selects one proxy. If the proxy list has ended, it requests a new proxy list.
+        """
+        if not len(self.proxies):
+            self._get_proxies()
+
+        proxy = self.proxies.pop(0)
+        logging.info(
+            f'New proxy:\t{proxy}. We have:\t{len(self.proxies)} proxy addresses left. ' +
+            '(when the proxies run out, new ones will automatically load)'
+        )
+
+        return proxy
+
 def send_telegram_message(message: str,
                           chat_id: str = TG_CHAT_ID,
                           api_key: str = TG_API_KEY,
@@ -36,38 +70,6 @@ def send_telegram_message(message: str,
                              proxies=proxies,
                              verify=False)
     return response
-
-
-def get_proxies():
-    """
-    The function gets a list of free proxies from the site free-proxy-list.net
-    """
-    url = 'https://free-proxy-list.net/'
-    response = requests.get(url)
-    parser = fromstring(response.text)
-    proxies = set()
-    for i in parser.xpath('//tbody/tr'):
-        if i.xpath('.//td[7][contains(text(),"yes")]'):
-            # Grabbing IP and corresponding PORT
-            proxy = ":".join([i.xpath('.//td[1]/text()')[0], i.xpath('.//td[2]/text()')[0]])
-            proxies.add(proxy)
-    return list(proxies)
-
-
-def choose_new_proxy(proxies: list):
-    """
-    The function selects one proxy. If the proxy list has ended, it requests a new proxy list.
-    """
-    if not len(proxies):
-        proxies = get_proxies()
-
-    proxy = proxies.pop(0)
-    logging.info(
-        f'New proxy:\t{proxy}. We have:\t{len(proxies)} proxy addresses left. ' +
-        '(when the proxies run out, new ones will automatically load)'
-    )
-
-    return [proxy, proxies]
 
 
 def get_data(proxy: str):
