@@ -1,7 +1,18 @@
+# Target page and request params
 PAGE_URL = 'https://resale-intl.fwc22.tickets.fifa.com/secure/selection/event/date/product/101397570845/lang/en'
-# Как часто проверять состояние сайта
+USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36'
+REQUEST_TIMEOUT_SEC = 30
+
+# Web page check period
 DELAY_SEC = 15
-# Как часто сообщать, что бот работает (в циклах проверки)
+
+# How often to report that the bot is working (number of checks)
 COUNTER_LIMIT = 100
 
-TG_NOTIFICATIONS = True
+# Send notifications in telegram? It is convenient to disable for debugging
+TG_NOTIFICATIONS = False
+# DEBUG_MODE - more technical information will be output to the console. Convenient for debugging.
+DEBUG_MODE = True
+
+# initial proxies list
+proxies = []

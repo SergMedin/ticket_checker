@@ -1,68 +1,67 @@
+import logging
+
+from config import TG_NOTIFICATIONS, DELAY_SEC, COUNTER_LIMIT, proxies
+from functions import send_telegram_message, choose_new_proxy, get_data
+
 from time import sleep
+from requests.exceptions import HTTPError, SSLError, ProxyError, ConnectTimeout, ConnectionError
+from lxml.etree import ParserError
 
-# from config import *
-# from secrets import *
-from functions import *
+# try level=logging.DEBUG if you need more information
+logging.basicConfig(level=logging.INFO, format='%(asctime)s: %(message)s')
 
-print_log_message('Пробуем получить список прокси...')
-proxies = []
-proxy = choose_new_proxy(proxies)
 
-counter = -1
-while True:
-    counter += 1
-    print_log_message('')
+def main(proxies: list):
+    logging.info('We are trying to get a list of proxies...')
+    proxy, proxies = choose_new_proxy(proxies)
+
+    counter = -1
     while True:
-        try:
-            print_log_message('Пробуем получить данные с сайта...')
-            data = get_data(proxy)
-            break
-        except requests.exceptions.SSLError:
-            print_log_message('requests.exceptions.SSLError')
-            proxy = choose_new_proxy(proxies)
-        except requests.exceptions.ProxyError:
-            print_log_message('requests.exceptions.ProxyError')
-            proxy = choose_new_proxy(proxies)
-        except requests.exceptions.ConnectTimeout:
-            print_log_message('requests.exceptions.ConnectTimeout')
-            proxy = choose_new_proxy(proxies)
-        except lxml.etree.ParserError:
-            print_log_message('lxml.etree.ParserError')
-            proxy = choose_new_proxy(proxies)
-        
-    if data['status_code'] != 200:
-        print_log_message('Данные сайта не получены. Попробуем поменять прокси. Статус: {}'.format(data['status_code']))
-        proxy = choose_new_proxy(proxies)
-        print_log_message('Засыпаем на 1 секунду')
-        sleep(1)
-        continue
-    
-    no_tickets = True
-    print_log_message('Данные с сайта получены. Проверяем есть ли билеты...')
-    for match in data['matches']:
-        if match['match_status'] != 'Currently unavailable':
-            print_log_message('Уведомляем, что есть билеты')
-            no_tickets = False
-            counter = -1 # чтобы сразу как пропадут билеты получить уведомление о том, что их нет
-            
-            message = 'Похоже, есть билеты, как минимум на этот матч:\n'
-            for key in match:
-                message += key + ': ' + match[key] + '\n'
-                
-            if TG_NOTIFICATIONS:
-                send_telegram_message(message)
-            
-            # засыпаем надолго
-            print_log_message('Засыпаем на {} секунд'.format(DELAY_SEC*10))
-            sleep(DELAY_SEC*10)
-            break
-            
-    if no_tickets:
-        print_log_message('Билетов нет')
-        if counter == 0 or counter > COUNTER_LIMIT:
-            if TG_NOTIFICATIONS:
-                send_telegram_message('Билетов нет. Но я жив, здоров :)')
-            counter = 0
+        counter += 1
+        logging.info('')
+        while True:
+            try:
+                logging.info('We are trying to get data from the site...')
+                data = get_data(proxy)
+                break
+            except (HTTPError, SSLError, ProxyError, ConnectTimeout, ConnectionError, ParserError) as error:
+                logging.error(error)
+                proxy, proxies = choose_new_proxy(proxies)
+                logging.info('Fall asleep for 1 second')
+                sleep(1)
 
-        print_log_message('Засыпаем на {} секунд'.format(DELAY_SEC))
-        sleep(DELAY_SEC)
+        tickets_found = False
+        logging.info('Data from the site has been received. We check if there are tickets...')
+        for match in data:
+            if match['match_status'] != 'Currently unavailable':
+                logging.info('There are tickets! :)')
+                tickets_found = True
+                counter = -1  # as soon as the tickets disappear, we will receive a notification that they are not there
+
+                message = 'It looks like there are tickets for at least this match:\n'
+                for key in match:
+                    message += f'{key}: {match[key]}\n'
+
+                if TG_NOTIFICATIONS:
+                    send_telegram_message(message)
+
+                # we fall asleep for a long time
+                sleeping_delay_sec = DELAY_SEC * 10
+                logging.info(f'Falling asleep for {sleeping_delay_sec} seconds')
+                sleep(sleeping_delay_sec)
+                break
+
+        if not tickets_found:
+            logging.info('There are no tickets! :(')
+            if counter == 0 or counter > COUNTER_LIMIT:
+                if TG_NOTIFICATIONS:
+                    # Just notify that the bot is working
+                    send_telegram_message('There are no tickets. But I\'m alive and well :)')
+                counter = 0
+
+            logging.info(f'Fall asleep for {DELAY_SEC} seconds')
+            sleep(DELAY_SEC)
+
+
+if __name__ == '__main__':
+    main(proxies)

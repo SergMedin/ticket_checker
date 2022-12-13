@@ -1,13 +1,12 @@
-from secrets import *
-from config import *
+import logging
 
-from datetime import datetime
+from secrets import TG_CHAT_ID, TG_API_KEY
+from config import PAGE_URL, USER_AGENT, REQUEST_TIMEOUT_SEC
+
 import requests
-# import random
 from lxml.html import fromstring
-from lxml import html
 import json
-import lxml
+
 
 def send_telegram_message(message: str,
                           chat_id: str = TG_CHAT_ID,
@@ -20,8 +19,8 @@ def send_telegram_message(message: str,
     proxies = None
     if proxy_url is not None:
         proxies = {
-            'https': f'http://{username}:{password}@{proxy_url}',
-            'http': f'http://{username}:{password}@{proxy_url}'
+            'https': f'https://{proxy_username}:{proxy_password}@{proxy_url}',
+            'http': f'http://{proxy_username}:{proxy_password}@{proxy_url}'
         }
     headers = {'Content-Type': 'application/json',
                'Proxy-Authorization': 'Basic base64'}
@@ -38,65 +37,69 @@ def send_telegram_message(message: str,
                              verify=False)
     return response
 
-def print_log_message(text):
-    print('[{}]: {}'.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S'), text))
 
-# https://www.scrapehero.com/how-to-rotate-proxies-and-ip-addresses-using-python-3/
 def get_proxies():
+    """
+    The function gets a list of free proxies from the site free-proxy-list.net
+    """
     url = 'https://free-proxy-list.net/'
     response = requests.get(url)
     parser = fromstring(response.text)
     proxies = set()
     for i in parser.xpath('//tbody/tr'):
         if i.xpath('.//td[7][contains(text(),"yes")]'):
-            #Grabbing IP and corresponding PORT
+            # Grabbing IP and corresponding PORT
             proxy = ":".join([i.xpath('.//td[1]/text()')[0], i.xpath('.//td[2]/text()')[0]])
             proxies.add(proxy)
-    return proxies
+    return list(proxies)
 
-PROXY = ''
-def choose_new_proxy(proxies):
-    if len(proxies) < 2:
-        proxies += get_proxies()
 
-    PROXY = proxies.pop(0)
-    print_log_message('Новый адрес прокси:\t{}. Осталось:\t{} адресов (при обнулении, автоматически загрузятся новые)'.format(PROXY, len(proxies)))
+def choose_new_proxy(proxies: list):
+    """
+    The function selects one proxy. If the proxy list has ended, it requests a new proxy list.
+    """
+    if not len(proxies):
+        proxies = get_proxies()
 
-    return PROXY
+    proxy = proxies.pop(0)
+    logging.info(
+        f'New proxy:\t{proxy}. We have:\t{len(proxies)} proxy addresses left. ' +
+        '(when the proxies run out, new ones will automatically load)'
+    )
 
-def get_data(proxy = ''):
+    return [proxy, proxies]
+
+
+def get_data(proxy: str):
+    """
+    Get and parse data from website
+    """
     headers = {
-        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36',
+        'user-agent': USER_AGENT,
     }
 
-    print_log_message('Словарь параметров прокси:')
-    print_log_message({"http": proxy, "https": proxy})
+    logging.info(f'Current proxy:\t{proxy}')
     response = requests.get(
         PAGE_URL,
         headers=headers,
         proxies={"http": proxy, "https": proxy},
-        timeout=30
+        timeout=REQUEST_TIMEOUT_SEC
     )
-    
-    print_log_message('Статус ответа: {}'.format(response.status_code))
+
     if response.status_code != 200:
-        return {
-            'matches': [],
-            'status_code': response.status_code
-        }
-    
-    tree = fromstring(response.content) 
+        response.raise_for_status()
+
+    tree = fromstring(response.content)
     phases = list(
         tree
-        .xpath('//*[@class="performances_sub_container performances_monthly_grouped performances_monthly_sold_out performances_grouped_by_phase"]')
-        #.xpath('//*[contains(@class, "performances_sub_container performances_monthly_grouped")]')
+        .xpath(
+            '//*[@class="performances_sub_container performances_monthly_grouped performances_monthly_sold_out performances_grouped_by_phase"]')
     ) + list(
         tree
         .xpath('//*[@class="performances_sub_container performances_monthly_grouped performances_grouped_by_phase"]')
     )
-    print(phases)
-    
-    print_log_message('Вижу {} фаз. Пробую извлечь данные о матчах...'.format(len(phases)))
+
+    logging.debug(f'I see {len(phases)} phases. I\'m trying to extract match data...')
     matches_data = []
     for phase in phases:
         matches = phase.find_class('perf_details')
@@ -137,7 +140,8 @@ def get_data(proxy = ''):
                 .text
             )
 
-            if len(match.find_class('buttons_availability resale perf_info_list_element last_element align_right')[0].find_class('from sold_out_text')) != 0:
+            if len(match.find_class('buttons_availability resale perf_info_list_element last_element align_right')[
+                       0].find_class('from sold_out_text')) != 0:
                 match_data['match_status'] = (
                     match
                     .find_class('buttons_availability resale perf_info_list_element last_element align_right')[0]
@@ -148,13 +152,12 @@ def get_data(proxy = ''):
                 match_data['match_status'] = 'UNKNOWN'
 
             matches_data.append(match_data)
-    
-    print_log_message('Собрали информацию о {} матчах.'.format(len(matches_data)))
-    for element in matches_data:
-        for key in element:
-            print(key, ':', element[key])
-        print()
-    return {
-            'matches': matches_data,
-            'status_code': response.status_code
-        }
+
+        debug_text = f'Collected information about {len(matches_data)} matches.\n'
+        for element in matches_data:
+            for key in element:
+                debug_text += f'{key}:{element[key]}\n'
+            debug_text += '\n'
+        logging.debug(debug_text)
+
+    return matches_data
